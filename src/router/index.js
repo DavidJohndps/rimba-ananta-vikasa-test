@@ -1,6 +1,6 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import Home from "../views/Home.vue";
+import store from '../store'
 
 Vue.use(VueRouter);
 
@@ -8,23 +8,39 @@ const routes = [
   {
     path: "/",
     name: "Home",
-    component: Home,
+    component: () =>
+      import(/* webpackChunkName: "about" */ "../views/Home.vue"),
   },
   {
-    path: "/about",
-    name: "About",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
+    path: "/login",
+    name: "Login",
     component: () =>
-      import(/* webpackChunkName: "about" */ "../views/About.vue"),
+      import(/* webpackChunkName: "about" */ "../views/Login.vue"),
   },
+  {
+    path: "/dashboard",
+    name: "Dashboard",
+    meta: {
+      requiresAuth: true
+    },
+    component: () =>
+      import(/* webpackChunkName: "about" */ "../views/Dashboard.vue"),
+  }
 ];
 
 const router = new VueRouter({
   mode: "history",
   base: process.env.BASE_URL,
   routes,
+});
+
+router.beforeResolve((to, from, next) => {
+  const {id, role} = store.getters.getCredentials;
+  const isAuthenticated = !!id;
+  const isStaff = role == '1' ? true : false;
+  if (to.meta.requiresAuth && !isAuthenticated) next("Login");
+  if (to.meta.requiresAuth && to.meta.staffOnly && !isStaff) next("Login")
+  else next();
 });
 
 export default router;
